@@ -1,0 +1,1 @@
+/Users/chris/.config/emacs/elpaca/repos/emacs-beads/AGENTS.md
