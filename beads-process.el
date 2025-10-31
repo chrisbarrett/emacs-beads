@@ -3,7 +3,7 @@
 ;;; Commentary:
 
 ;; This library provides asynchronous process execution for bd commands with a
-;; magit-process-style log buffer for debugging.
+;; magit-process-style log buffer for user inspection.
 
 ;;; Code:
 

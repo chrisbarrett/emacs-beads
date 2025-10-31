@@ -29,7 +29,7 @@
 ;;
 ;; Beads provides a git-commit-like buffer interface for creating issues,
 ;; asynchronous process execution with magit-process-style logging, and
-;; Claude Code integration for natural language issue creation.
+;; AI agent integration for natural language issue creation.
 ;;
 ;; See the README for more information:
 ;; https://github.com/chrisbarrett/emacs-beads
@@ -38,6 +38,8 @@
 
 (require 'beads-vars)
 (require 'beads-process)
+(require 'beads-agent)
+(require 'beads-agent-claude)
 
 (provide 'beads)
 

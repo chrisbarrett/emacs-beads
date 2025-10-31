@@ -16,6 +16,11 @@
   :type 'string
   :group 'beads)
 
+(defcustom beads-agent-backend 'claude
+  "AI agent backend to use for processing natural language input."
+  :type '(choice (const :tag "Claude Code CLI" claude))
+  :group 'beads)
+
 (provide 'beads-vars)
 
 ;;; beads-vars.el ends here
