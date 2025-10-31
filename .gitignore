@@ -3,3 +3,4 @@
 *.eln
 .DS_Store
 .dir-locals.el
+.eldev

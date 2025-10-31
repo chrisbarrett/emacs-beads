@@ -1,0 +1,16 @@
+; -*- mode: emacs-lisp; lexical-binding: t; no-byte-compile: t -*-
+
+;; Eldev configuration for emacs-beads
+
+(eldev-use-package-archive 'gnu)
+(eldev-use-package-archive 'melpa)
+
+;; Dependencies required for building and testing
+(eldev-add-extra-dependencies 'test 'buttercup)
+(eldev-add-extra-dependencies 'runtime 'magit-section)
+
+;; Use ERT as the test framework
+(setf eldev-test-framework 'ert)
+
+;; Test files pattern
+(setf eldev-test-fileset '("*-tests.el"))
