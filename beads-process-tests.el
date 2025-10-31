@@ -1,263 +1,239 @@
-;;; beads-process-tests.el --- DESC -*- lexical-binding: t; -*-
+;;; beads-process-tests.el --- Tests for beads-process -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
 ;;; Code:
 
 (require 'beads-process)
-(require 'ert)
+(require 'buttercup)
 
-;;; Tests for beads-process-command-to-process-args
+(describe "beads-process-command-to-process-args"
 
-(ert-deftest beads-process-command-to-process-args--simple ()
-  "Test conversion with just command and arguments."
-  (let ((beads-program "bd"))
-    (should (equal (beads-process-command-to-process-args
-                    '(:bd "create" :arguments ("my-title")))
-                   '("bd" "create" "my-title")))))
+  (describe "basic command conversion"
+    (it "converts simple command with arguments"
+      (let ((beads-program "bd"))
+        (expect (beads-process-command-to-process-args
+                 '(:bd "create" :arguments ("my-title")))
+                :to-equal
+                '("bd" "create" "my-title"))))
 
-(ert-deftest beads-process-command-to-process-args--flag-with-string ()
-  "Test conversion with string flag."
-  (let ((beads-program "bd"))
-    (should (equal (beads-process-command-to-process-args
-                    '(:bd "create"
-                      :arguments ("my-title")
-                      :flags ((type . "bug"))))
-                   '("bd" "create" "my-title" "--type" "bug")))))
+    (it "converts arbitrary command instead of bd"
+      (expect (beads-process-command-to-process-args
+               '(:command "echo" :arguments ("hello" "world")))
+              :to-equal
+              '("echo" "hello" "world"))))
 
-(ert-deftest beads-process-command-to-process-args--flag-with-number ()
-  "Test conversion with number flag."
-  (let ((beads-program "bd"))
-    (should (equal (beads-process-command-to-process-args
-                    '(:bd "create"
-                      :arguments ("my-title")
-                      :flags ((priority . 1))))
-                   '("bd" "create" "my-title" "--priority" "1")))))
+  (describe "flag conversion"
+    (it "converts string flag"
+      (let ((beads-program "bd"))
+        (expect (beads-process-command-to-process-args
+                 '(:bd "create"
+                   :arguments ("my-title")
+                   :flags ((type . "bug"))))
+                :to-equal
+                '("bd" "create" "my-title" "--type" "bug"))))
 
-(ert-deftest beads-process-command-to-process-args--flag-with-list ()
-  "Test conversion with list flag (should be comma-joined)."
-  (let ((beads-program "bd"))
-    (should (equal (beads-process-command-to-process-args
-                    '(:bd "create"
-                      :arguments ("my-title")
-                      :flags ((labels . ("foo" "bar" "baz")))))
-                   '("bd" "create" "my-title" "--labels" "foo,bar,baz")))))
+    (it "converts number flag"
+      (let ((beads-program "bd"))
+        (expect (beads-process-command-to-process-args
+                 '(:bd "create"
+                   :arguments ("my-title")
+                   :flags ((priority . 1))))
+                :to-equal
+                '("bd" "create" "my-title" "--priority" "1"))))
 
-(ert-deftest beads-process-command-to-process-args--flag-with-underscore ()
-  "Test conversion with underscore in flag name (should become dash)."
-  (let ((beads-program "bd"))
-    (should (equal (beads-process-command-to-process-args
-                    '(:bd "create"
-                      :arguments ("my-title")
-                      :flags ((external_ref . "GH-123"))))
-                   '("bd" "create" "my-title" "--external-ref" "GH-123")))))
+    (it "converts list flag to comma-joined string"
+      (let ((beads-program "bd"))
+        (expect (beads-process-command-to-process-args
+                 '(:bd "create"
+                   :arguments ("my-title")
+                   :flags ((labels . ("foo" "bar" "baz")))))
+                :to-equal
+                '("bd" "create" "my-title" "--labels" "foo,bar,baz"))))
 
-(ert-deftest beads-process-command-to-process-args--complex ()
-  "Test conversion with multiple arguments and flags of different types."
-  (let* ((beads-program "bd")
-         (result (beads-process-command-to-process-args
-                  '(:bd "create"
-                    :arguments ("my-title")
-                    :flags ((type . "bug")
-                            (priority . 2)
-                            (labels . ("urgent" "frontend"))
-                            (external_ref . "JIRA-456"))))))
-    (should (equal (nth 0 result) "bd"))
-    (should (equal (nth 1 result) "create"))
-    (should (equal (nth 2 result) "my-title"))
-    (should (member "--type" result))
-    (should (member "bug" result))
-    (should (member "--priority" result))
-    (should (member "2" result))
-    (should (member "--labels" result))
-    (should (member "urgent,frontend" result))
-    (should (member "--external-ref" result))
-    (should (member "JIRA-456" result))))
+    (it "converts underscore in flag name to dash"
+      (let ((beads-program "bd"))
+        (expect (beads-process-command-to-process-args
+                 '(:bd "create"
+                   :arguments ("my-title")
+                   :flags ((external_ref . "GH-123"))))
+                :to-equal
+                '("bd" "create" "my-title" "--external-ref" "GH-123"))))
 
-(ert-deftest beads-process-command-to-process-args--arbitrary-command ()
-  "Test conversion with arbitrary :command instead of :bd."
-  (should (equal (beads-process-command-to-process-args
-                  '(:command "echo" :arguments ("hello" "world")))
-                 '("echo" "hello" "world"))))
+    (it "converts arbitrary command with flags"
+      (expect (beads-process-command-to-process-args
+               '(:command "git"
+                 :arguments ("commit")
+                 :flags ((message . "test commit")
+                         (author . "Test User"))))
+              :to-equal
+              '("git" "commit" "--message" "test commit" "--author" "Test User"))))
 
-(ert-deftest beads-process-command-to-process-args--arbitrary-command-with-flags ()
-  "Test conversion with arbitrary :command with flags."
-  (should (equal (beads-process-command-to-process-args
-                  '(:command "git"
-                    :arguments ("commit")
-                    :flags ((message . "test commit")
-                            (author . "Test User"))))
-                 '("git" "commit" "--message" "test commit" "--author" "Test User"))))
+  (describe "complex conversions"
+    (it "handles multiple arguments and flags of different types"
+      (let* ((beads-program "bd")
+             (result (beads-process-command-to-process-args
+                      '(:bd "create"
+                        :arguments ("my-title")
+                        :flags ((type . "bug")
+                                (priority . 2)
+                                (labels . ("urgent" "frontend"))
+                                (external_ref . "JIRA-456"))))))
+        (expect (nth 0 result) :to-equal "bd")
+        (expect (nth 1 result) :to-equal "create")
+        (expect (nth 2 result) :to-equal "my-title")
+        (expect result :to-contain "--type")
+        (expect result :to-contain "bug")
+        (expect result :to-contain "--priority")
+        (expect result :to-contain "2")
+        (expect result :to-contain "--labels")
+        (expect result :to-contain "urgent,frontend")
+        (expect result :to-contain "--external-ref")
+        (expect result :to-contain "JIRA-456")))))
 
 ;;; Integration tests
 
-(ert-deftest beads-process-call--single-command--no-args ()
-  "Test single command with no arguments."
-  (let* ((beads-program "echo")
-         (beads-proc-buffer (generate-new-buffer " *test-bd-proc*"))
-         (beads-process-commands-queue nil)
-         callback-called
-         callback-result)
-    (unwind-protect
-        (progn
+(describe "beads-process-call"
+
+  (describe "single command execution"
+    (it "executes single command with no arguments"
+      (with-temp-buffer
+        (let* ((beads-program "echo")
+               (beads-proc-buffer (current-buffer))
+               (beads-process-commands-queue nil)
+               callback-called
+               callback-result)
           (beads-process-call (list :bd "1"
-                                  :arguments nil
-                                  :callback (lambda (str)
-                                              (setq callback-called t
-                                                    callback-result str))))
+                                    :arguments nil
+                                    :callback (lambda (str)
+                                                (setq callback-called t
+                                                      callback-result str))))
           ;; Wait for the callback to be called
           (while (not callback-called)
             (accept-process-output nil 0.1))
 
-          (should callback-called)
-          (should (equal "1" callback-result)))
+          (expect callback-called :to-be-truthy)
+          (expect callback-result :to-equal "1"))))
 
-      (ignore-errors
-        (kill-buffer beads-proc-buffer)))))
-
-(ert-deftest beads-process-call--single-command--with-args ()
-  "Test single command with arguments."
-  (let* ((beads-program "echo")
-         (beads-proc-buffer (generate-new-buffer " *test-bd-proc*"))
-         (beads-process-commands-queue nil)
-         callback-called
-         callback-result)
-    (unwind-protect
-        (progn
+    (it "executes single command with arguments"
+      (with-temp-buffer
+        (let* ((beads-program "echo")
+               (beads-proc-buffer (current-buffer))
+               (beads-process-commands-queue nil)
+               callback-called
+               callback-result)
           (beads-process-call (list :bd "1"
-                                  :arguments '("a" "b")
-                                  :callback (lambda (str)
-                                              (setq callback-called t
-                                                    callback-result str))))
+                                    :arguments '("a" "b")
+                                    :callback (lambda (str)
+                                                (setq callback-called t
+                                                      callback-result str))))
 
           ;; Wait for the callback to be called
           (while (not callback-called)
             (accept-process-output nil 0.1))
 
-          (should callback-called)
-          (should (equal "1 a b" callback-result)))
+          (expect callback-called :to-be-truthy)
+          (expect callback-result :to-equal "1 a b"))))
 
-      (ignore-errors
-        (kill-buffer beads-proc-buffer)))))
-
-(ert-deftest beads-process-call--multiple-commands ()
-  "Test multiple commands executed sequentially."
-  (let* ((beads-program "echo")
-         (beads-proc-buffer (generate-new-buffer " *test-bd-proc*"))
-         (beads-process-commands-queue nil)
-         first-callback-called
-         first-callback-result
-         second-callback-called
-         second-callback-result)
-    (unwind-protect
-        (progn
-
-          (beads-process-call (list :bd "1"
-                                  :arguments nil
-                                  :callback (lambda (str)
-                                              (setq first-callback-called t
-                                                    first-callback-result str)))
-                            (list :bd "2"
-                                  :arguments nil
-                                  :callback (lambda (str)
-                                              (setq second-callback-called t
-                                                    second-callback-result str))))
-
-          (while (not (and first-callback-called second-callback-called))
-            (accept-process-output nil 0.1))
-
-          (should first-callback-called)
-          (should second-callback-called)
-          (should (equal "1" first-callback-result))
-          (should (equal "2" second-callback-result)))
-
-      (ignore-errors
-        (kill-buffer beads-proc-buffer)))))
-
-(ert-deftest beads-process-call--command-without-callback ()
-  "Test command execution without a callback."
-  (let* ((beads-program "echo")
-         (beads-proc-buffer (generate-new-buffer " *test-bd-proc*"))
-         (beads-process-commands-queue nil)
-         queue-emptied)
-
-    (unwind-protect
-        (progn
+    (it "executes command without callback"
+      (with-temp-buffer
+        (let* ((beads-program "echo")
+               (beads-proc-buffer (current-buffer))
+               (beads-process-commands-queue nil)
+               queue-emptied)
           (beads-process-call (list :bd "test"
-                                  :arguments '("foo")))
+                                    :arguments '("foo")))
 
           ;; Wait for queue to empty (command completed)
           (while (not queue-emptied)
             (setq queue-emptied (null beads-process-commands-queue))
             (accept-process-output nil 0.1))
 
-          (should queue-emptied))
+          (expect queue-emptied :to-be-truthy)))))
 
-      (ignore-errors
-        (kill-buffer beads-proc-buffer)))))
+  (describe "multiple command execution"
+    (it "executes multiple commands sequentially"
+      (with-temp-buffer
+        (let* ((beads-program "echo")
+               (beads-proc-buffer (current-buffer))
+               (beads-process-commands-queue nil)
+               first-callback-called
+               first-callback-result
+               second-callback-called
+               second-callback-result)
+          (beads-process-call (list :bd "1"
+                                    :arguments nil
+                                    :callback (lambda (str)
+                                                (setq first-callback-called t
+                                                      first-callback-result str)))
+                              (list :bd "2"
+                                    :arguments nil
+                                    :callback (lambda (str)
+                                                (setq second-callback-called t
+                                                      second-callback-result str))))
 
-(ert-deftest beads-process-call--failed-command-stops-sequence ()
-  "Test that a failed command stops subsequent commands from executing."
-  (let* ((beads-program "false")  ; Command that always fails
-         (beads-proc-buffer (generate-new-buffer " *test-bd-proc*"))
-         (beads-process-commands-queue nil)
-         (first-completed nil)
-         (second-callback-called nil)
-         (queue-emptied nil))
-    (unwind-protect
-        (progn
+          (while (not (and first-callback-called second-callback-called))
+            (accept-process-output nil 0.1))
+
+          (expect first-callback-called :to-be-truthy)
+          (expect second-callback-called :to-be-truthy)
+          (expect first-callback-result :to-equal "1")
+          (expect second-callback-result :to-equal "2")))))
+
+  (describe "error handling"
+    (it "stops sequence when command fails"
+      (with-temp-buffer
+        (let* ((beads-program "false")  ; Command that always fails
+               (beads-proc-buffer (current-buffer))
+               (beads-process-commands-queue nil)
+               (first-completed nil)
+               (second-callback-called nil)
+               (queue-emptied nil))
           (beads-process-call (list :bd ""
-                                  :arguments nil
-                                  :flags nil
-                                  :callback (lambda (_str)
-                                              (setq first-completed t)))
-                            (list :bd ""
-                                  :arguments nil
-                                  :flags nil
-                                  :callback (lambda (_str)
-                                              (setq second-callback-called t))))
+                                    :arguments nil
+                                    :flags nil
+                                    :callback (lambda (_str)
+                                                (setq first-completed t)))
+                              (list :bd ""
+                                    :arguments nil
+                                    :flags nil
+                                    :callback (lambda (_str)
+                                                (setq second-callback-called t))))
 
           ;; Wait for queue to empty (both commands processed, one way or another)
           (while (not queue-emptied)
             (setq queue-emptied (null beads-process-commands-queue))
             (accept-process-output nil 0.1))
 
-          (should-not first-completed)
-          (should-not second-callback-called))
+          (expect first-completed :not :to-be-truthy)
+          (expect second-callback-called :not :to-be-truthy)))))
 
-      (ignore-errors
-        (kill-buffer beads-proc-buffer)))))
-
-(ert-deftest beads-process-call--with-flags ()
-  "Test command with both arguments and flags."
-  (let* ((beads-program "echo")
-         (beads-proc-buffer (generate-new-buffer " *test-bd-proc*"))
-         (beads-process-commands-queue nil)
-         callback-called
-         callback-result)
-    (unwind-protect
-        (progn
+  (describe "command with flags"
+    (it "executes command with both arguments and flags"
+      (with-temp-buffer
+        (let* ((beads-program "echo")
+               (beads-proc-buffer (current-buffer))
+               (beads-process-commands-queue nil)
+               callback-called
+               callback-result)
           (beads-process-call (list :bd "create"
-                                  :arguments '("my-title")
-                                  :flags '((type . "bug")
-                                           (priority . 1)
-                                           (labels . ("foo" "bar")))
-                                  :callback (lambda (str)
-                                              (setq callback-called t
-                                                    callback-result str))))
+                                    :arguments '("my-title")
+                                    :flags '((type . "bug")
+                                             (priority . 1)
+                                             (labels . ("foo" "bar")))
+                                    :callback (lambda (str)
+                                                (setq callback-called t
+                                                      callback-result str))))
 
           (while (not callback-called)
             (accept-process-output nil 0.1))
 
-          (should callback-called)
+          (expect callback-called :to-be-truthy)
           ;; Should output: create my-title --type bug --priority 1 --labels foo,bar
-          (should (string-match-p (rx "create" (+ space) "my-title") callback-result))
-          (should (string-match-p (rx "--type" (+ space) "bug") callback-result))
-          (should (string-match-p (rx "--priority" (+ space) "1") callback-result))
-          (should (string-match-p (rx "--labels" (+ space) "foo,bar") callback-result)))
-
-      (ignore-errors
-        (kill-buffer beads-proc-buffer)))))
+          (expect callback-result :to-match (rx "create" (+ space) "my-title"))
+          (expect callback-result :to-match (rx "--type" (+ space) "bug"))
+          (expect callback-result :to-match (rx "--priority" (+ space) "1"))
+          (expect callback-result :to-match (rx "--labels" (+ space) "foo,bar")))))))
 
 (provide 'beads-process-tests)
 

@@ -9,8 +9,8 @@
 (eldev-add-extra-dependencies 'test 'buttercup)
 (eldev-add-extra-dependencies 'runtime 'magit-section)
 
-;; Use ERT as the test framework
-(setf eldev-test-framework 'ert)
+;; Use buttercup as the test framework
+(setf eldev-test-framework 'buttercup)
 
 ;; Test files pattern
 (setf eldev-test-fileset '("*-tests.el"))
