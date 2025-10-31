@@ -99,8 +99,8 @@ the issue. Otherwise, use the worktree associated with the
 current tab, or fall back to `default-directory'."
   (interactive)
   (let* ((worktree (or worktree-path
-                       (when (fboundp '+worktrees-path-for-selected-tab)
-                         (+worktrees-path-for-selected-tab))
+                       (when beads-worktree-root-function
+                         (funcall beads-worktree-root-function))
                        default-directory))
          (window-config (current-window-configuration))
          (buf (generate-new-buffer beads-issue-buffer-name)))
