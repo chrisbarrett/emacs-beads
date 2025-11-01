@@ -40,6 +40,7 @@
 (require 'beads-process)
 (require 'beads-agent)
 (require 'beads-agent-claude)
+(require 'beads-issue)
 (require 'beads-create)
 
 (provide 'beads)
